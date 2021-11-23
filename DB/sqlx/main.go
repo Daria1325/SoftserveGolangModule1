@@ -17,20 +17,16 @@ type salary struct {
 	id_emp int
 	name   string
 }
-
-func getEmployees() {
-
+type Repo struct {
+	db *sqlx.DB
 }
 
-func main() {
-	db, err := sqlx.Open("postgres", "user=postgres dbname=taskDb password=12345 sslmode=disable")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer db.Close()
+func New(db *sqlx.DB) *Repo {
+	return &Repo{db: db}
+}
 
-	//Retrieve the list of employees
-	rows, err := db.Query("select * from employee")
+func (r *Repo) getEmployeeRecords() {
+	rows, err := r.db.Query("select * from employee")
 	if err != nil {
 		panic(err)
 	}
@@ -49,8 +45,9 @@ func main() {
 	for _, p := range employees {
 		fmt.Println(p.id, p.name)
 	}
-	//Retrieve the list of salary records
-	rows, err = db.Query("select * from salary")
+}
+func (r *Repo) getSalaryRecords() {
+	rows, err := r.db.Query("select * from salary")
 	if err != nil {
 		err.Error()
 	}
@@ -69,29 +66,43 @@ func main() {
 	for _, p := range salaries {
 		fmt.Println(p.id, p.id_emp, p.name)
 	}
-
-	//Add employee
+}
+func (r *Repo) addEmployee() {
 	fmt.Println("Please enter the name of a new employee")
 	var input string
 	fmt.Scan(&input)
 	sqlStatement := `INSERT INTO employee (name) VALUES ($1)`
-	_, err = db.Exec(sqlStatement, input)
+	_, err = r.db.Exec(sqlStatement, input)
 	if err != nil {
 		panic(err)
 	}
-
-	//Add salary record
+}
+func (r *Repo) addSalary() {
 	fmt.Println("Please enter the name and employee`s id")
 	var name, emp_id string
 	fmt.Scan(&name, &emp_id)
 	sqlStatement := `INSERT INTO salary (employee_id, name) VALUES ($1, $2)`
 
-	rez, err := db.Query(fmt.Sprintf("SELECT * FROM employee WHERE id=%s", emp_id))
+	rez, err := r.db.Query(fmt.Sprintf("SELECT * FROM employee WHERE id=%s", emp_id))
 	if rez != nil {
-		_, err = db.Exec(sqlStatement, emp_id, name)
+		_, err = r.db.Exec(sqlStatement, emp_id, name)
 		if err != nil {
 			panic(err)
 		}
 	}
+}
 
+func main() {
+	db, err := sqlx.Open("postgres", "user=postgres dbname=taskDb password=12345 sslmode=disable")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer db.Close()
+
+	repo := New(db)
+
+	repo.getEmployeeRecords()
+	repo.getSalaryRecords()
+	repo.addEmployee()
+	repo.addSalary()
 }
