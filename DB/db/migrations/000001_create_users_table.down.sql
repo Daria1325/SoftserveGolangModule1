@@ -1,3 +1,3 @@
-DROP TABLE employee;
+DROP TABLE employees;
 
-DROP TABLE salary;
+DROP TABLE salaries;

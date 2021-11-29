@@ -26,7 +26,7 @@ func New(db *sqlx.DB) *Repo {
 }
 
 func (r *Repo) getEmployeeRecords() {
-	rows, err := r.db.Query("select * from employee")
+	rows, err := r.db.Query("select * from employees")
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +47,7 @@ func (r *Repo) getEmployeeRecords() {
 	}
 }
 func (r *Repo) getSalaryRecords() {
-	rows, err := r.db.Query("select * from salary")
+	rows, err := r.db.Query("select * from salaries")
 	if err != nil {
 		err.Error()
 	}
@@ -71,8 +71,8 @@ func (r *Repo) addEmployee() {
 	fmt.Println("Please enter the name of a new employee")
 	var input string
 	fmt.Scan(&input)
-	sqlStatement := `INSERT INTO employee (name) VALUES ($1)`
-	_, err = r.db.Exec(sqlStatement, input)
+	sqlStatement := `INSERT INTO employees (name) VALUES ($1)`
+	_, err := r.db.Exec(sqlStatement, input)
 	if err != nil {
 		panic(err)
 	}
@@ -81,9 +81,9 @@ func (r *Repo) addSalary() {
 	fmt.Println("Please enter the name and employee`s id")
 	var name, emp_id string
 	fmt.Scan(&name, &emp_id)
-	sqlStatement := `INSERT INTO salary (employee_id, name) VALUES ($1, $2)`
+	sqlStatement := `INSERT INTO salaries (employee_id, name) VALUES ($1, $2)`
 
-	rez, err := r.db.Query(fmt.Sprintf("SELECT * FROM employee WHERE id=%s", emp_id))
+	rez, err := r.db.Query(fmt.Sprintf("SELECT * FROM employees WHERE id=%s", emp_id))
 	if rez != nil {
 		_, err = r.db.Exec(sqlStatement, emp_id, name)
 		if err != nil {

@@ -1,0 +1,7 @@
+version: 1
+packages:
+  - path: "generated"
+    name: "taskDb"
+    engine: "postgresql"
+    schema: "schema.sql"
+    queries: "query.sql"

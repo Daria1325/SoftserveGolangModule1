@@ -51,7 +51,7 @@ func reciever(ctx context.Context, intCh chan Message) {
 }
 
 func main() {
-	wg.Add(2)
+	wg.Add(3)
 	intCh := make(chan Message)
 	//defer close(intCh)
 
@@ -59,23 +59,13 @@ func main() {
 	_ = ctx
 	defer cancel()
 	group := func() {
-		//defer wg.Done()
+		defer wg.Done()
 		defer close(intCh)
 		go sender(ctx, intCh)
 		go reciever(ctx, intCh) //не заканчивается
 		wg.Wait()
 	}
-	group()
+	go group()
+	wg.Wait()
 
-	//for {
-	//	select {
-	//	case <-time.After(time.Microsecond):
-	//		wg.Add(3)
-	//		go group()
-	//		wg.Wait()
-	//	case <-ctx.Done():
-	//		fmt.Println(ctx.Err())
-	//		return
-	//	}
-	//}
 }
