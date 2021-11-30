@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 )
@@ -19,32 +18,34 @@ func print(indiv Message) {
 	fmt.Println(indiv.time.Format("15:04:05"), indiv.msg)
 }
 
-func sender(ctx context.Context, intCh chan Message) {
+func sender(intCh chan Message, quit chan bool, quitrecv chan bool) {
 	defer wg.Done()
-	defer fmt.Println("gorutine send exit")
-	fmt.Println("gorutine send")
+	defer fmt.Println("\ngorutine send exit")
+
 	for {
 		select {
-		case <-ctx.Done():
-			log.Fatal("Time is out")
+		case <-quit:
+			quitrecv <- true
 			return
 		case <-time.Tick(2 * time.Second):
 			intCh <- Message{time.Now(), "time"}
 		}
 	}
 }
-func reciever(ctx context.Context, intCh chan Message) {
+func reciever(intCh chan Message, quitrecv chan bool) {
 	defer wg.Done()
-	defer fmt.Println("gorutine send exit")
-	fmt.Println("gorutine rec")
-
+	defer fmt.Println("\ngorutine rec exit")
 	for {
 		select {
-		case <-ctx.Done():
-			fmt.Print(ctx.Err())
+		case <-quitrecv:
+			for i := 0; i < len(intCh); i++ {
+				print(<-intCh)
+			}
 			return
 		case <-time.Tick(5 * time.Second):
-			print(<-intCh)
+			for i := 0; i < len(intCh); i++ {
+				print(<-intCh)
+			}
 		}
 	}
 
@@ -52,20 +53,31 @@ func reciever(ctx context.Context, intCh chan Message) {
 
 func main() {
 	wg.Add(3)
-	intCh := make(chan Message)
-	//defer close(intCh)
+	intCh := make(chan Message, 100)
+	quit := make(chan bool)
+	quitrecv := make(chan bool)
+
+	defer close(intCh)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	_ = ctx
 	defer cancel()
-	group := func() {
+	go func() {
 		defer wg.Done()
-		defer close(intCh)
-		go sender(ctx, intCh)
-		go reciever(ctx, intCh) //не заканчивается
-		wg.Wait()
-	}
-	go group()
+		go sender(intCh, quit, quitrecv) //don't exit
+		go reciever(intCh, quitrecv)
+
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Print(ctx.Err())
+				quit <- true
+				return
+			default:
+
+			}
+		}
+	}()
 	wg.Wait()
 
 }
